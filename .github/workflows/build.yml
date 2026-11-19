@@ -41,7 +41,6 @@ jobs:
             python3-venv cmake ninja-build ccache libffi-dev libssl-dev \
             dfu-util libusb-1.0-0
 
-      # 👇 新增步骤：固定 Python 3.10，解决 gevent 构建失败
       - name: 设置 Python 3.10
         uses: actions/setup-python@v5
         with:
@@ -58,7 +57,8 @@ jobs:
         run: |
           set -e
           cd lv_micropython
-          make -C mpy-cross -j$(nproc)
+          CFLAGS="-Wno-error=unterminated-string-initialization" \
+            make -C mpy-cross -j$(nproc)
 
       - name: 初始化 ESP32 端口子模块
         run: |
