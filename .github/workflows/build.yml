@@ -24,15 +24,15 @@ jobs:
       - name: 复制板子配置、驱动、lv_conf
         run: |
           set -e
-          echo "复制板子配置..."
+          echo "1. 复制板子配置..."
           cp -r myconfig/boards/ESP32_MINI_1_4M lv_micropython/ports/esp32/boards/
           
-          echo "复制 lv_conf.h 到 lv_binding_micropython 目录..."
-          cp myconfig/lv_conf.h lv_micropython/user_modules/lv_binding_micropython/lv_conf.h
+          echo "2. 复制 lv_conf.h 到根目录..."
+          cp myconfig/lv_conf.h lv_micropython/lv_conf.h
           
-          echo "复制自定义模块（如果有的话）..."
-          # 使用 /* 处理目录为空的情况
-          cp -r myconfig/modules/* lv_micropython/ports/esp32/modules/ 2>/dev/null || true
+          echo "3. 复制 frozen 模块..."
+          mkdir -p lv_micropython/ports/esp32/modules
+          cp -r myconfig/modules/* lv_micropython/ports/esp32/modules/
 
       - name: 安装系统依赖
         run: |
