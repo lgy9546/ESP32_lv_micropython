@@ -1,0 +1,15 @@
+{
+    "name": "ESP32_MINI_1_4M",
+    "version": 1,
+    "vendor": "Espressif",
+    "product": "ESP32-MINI-1",
+    "description": "ESP32 MINI-1, 4MB Flash, no PSRAM",
+    "flash_size": 4194304,
+    "flash_mode": "qio",
+    "flash_freq": "40m",
+    "psram_size": 0,
+    "build": {
+        "sdkconfig": "sdkconfig.board",
+        "partitions": "partitions-4M.csv"
+    }
+}
