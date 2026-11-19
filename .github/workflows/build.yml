@@ -1,6 +1,11 @@
-name: Build lv_micropython ESP32-MINI-1 AutoRelease2
+name: Build lv_micropython ESP32-MINI-1 AutoRelease3
+
 on:
   workflow_dispatch:
+
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -10,13 +15,11 @@ jobs:
         with:
           path: myconfig
 
-      - name: 拉取 lv_micropython release/v8（LVGL8.3 + IDF4.4）
+      - name: 拉取 lv_micropython release/v8
         run: |
           set -e
-          git clone --depth 1 --recursive https://github.com/lvgl/lv_micropython.git
-          cd lv_micropython
-          git checkout release/v8
-          git submodule update --init --recursive
+          git clone --depth 1 --branch release/v8 --recursive \
+            https://github.com/lvgl/lv_micropython.git
 
       - name: 复制板子配置、驱动、lv_conf
         run: |
@@ -25,29 +28,69 @@ jobs:
           cp myconfig/lv_conf.h lv_micropython/lib/lvgl/lv_conf.h
           cp myconfig/modules/* lv_micropython/ports/esp32/modules/
 
-      - name: 安装依赖
+      - name: 安装系统依赖
         run: |
           sudo apt update
-          sudo apt install -y git wget flex bison gperf python3 python3-pip python3-venv cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0
+          sudo apt install -y git wget flex bison gperf python3 python3-pip \
+            python3-venv cmake ninja-build ccache libffi-dev libssl-dev \
+            dfu-util libusb-1.0-0
+
+      - name: 安装 ESP-IDF v4.4（使用官方 CI 脚本）
+        run: |
+          set -e
+          cd lv_micropython
+          source tools/ci.sh
+          ci_esp32_idf44_setup
+
+      - name: 编译 mpy-cross
+        run: |
+          set -e
+          cd lv_micropython
+          make -C mpy-cross -j$(nproc)
+
+      - name: 初始化 ESP32 端口子模块
+        run: |
+          set -e
+          cd lv_micropython
+          make -C ports/esp32 submodules BOARD=ESP32_MINI_1_4M
 
       - name: 编译固件
         run: |
-          cd lv_micropython/ports/esp32
+          set -e
+          cd lv_micropython
+          source tools/ci.sh
+          ci_esp32_idf44_setup
+          cd ports/esp32
           make BOARD=ESP32_MINI_1_4M -j$(nproc)
 
-      - name: 备用Artifact下载
+      - name: 校验固件文件
+        run: |
+          set -e
+          FIRMWARE="lv_micropython/ports/esp32/build-ESP32_MINI_1_4M/firmware.bin"
+          if [ ! -f "$FIRMWARE" ]; then
+            echo "::error::固件文件不存在：$FIRMWARE"
+            ls -lh lv_micropython/ports/esp32/build-ESP32_MINI_1_4M/ || true
+            exit 1
+          fi
+          ls -lh "$FIRMWARE"
+
+      - name: 上传 Artifact（备用下载）
         uses: actions/upload-artifact@v4
         with:
-          name: firmware
+          name: firmware-ESP32_MINI_1_4M
           path: lv_micropython/ports/esp32/build-ESP32_MINI_1_4M/firmware.bin
+          if-no-files-found: error
 
-      - name: 自动生成Release
+      - name: 生成时间戳标签
+        id: tag
+        run: echo "TAG_NAME=build-$(date +%Y%m%d-%H%M%S)" >> "$GITHUB_OUTPUT"
+
+      - name: 自动生成 Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "build-$(date +%Y%m%d-%H%M%S)"
-          name: "build-$(date +%Y%m%d-%H%M%S)"
+          tag_name: ${{ steps.tag.outputs.TAG_NAME }}
+          name: ${{ steps.tag.outputs.TAG_NAME }}
           body: |
-            ESP32-MINI-1 4M | ST7789+EC11
+            ESP32-MINI-1 4M | ST7789 + EC11
             lv_micropython release/v8（LVGL8.3 / IDF4.4）
-          files: |
-            lv_micropython/ports/esp32/build-ESP32_MINI_1_4M/firmware.bin
+          files: lv_micropython/ports/esp32/build-ESP32_MINI_1_4M/firmware.bin
