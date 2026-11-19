@@ -1,4 +1,4 @@
-name: Build lv_micropython ESP32-MINI-1 AutoRelease3
+name: Build lv_micropython ESP32-MINI-1 AutoRelease
 
 on:
   workflow_dispatch:
