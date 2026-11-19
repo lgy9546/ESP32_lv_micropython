@@ -1,0 +1,42 @@
+name: Build lv_micropython ESP32-MINI-1 4M
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:  # ✅ 网页手动触发！这个就是你要的【网页点一下编译】
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout your config
+        uses: actions/checkout@v4
+        path: myconfig
+
+      - name: Clone lv_micropython + submodules
+        run: |
+          git clone --recursive https://github.com/lvgl/lv_micropython.git
+          cd lv_micropython
+          # 锁定 IDF v4.4 分支，ESP32 原版最稳，避开 IDF5 各种坑
+          git checkout master
+          git submodule update --init --recursive
+
+      - name: Copy board config
+        run: |
+          cp -r myconfig/boards/ESP32_MINI_1_4M lv_micropython/ports/esp32/boards/
+          cp myconfig/lv_conf.h lv_micropython/lib/lvgl/lv_conf.h
+          cp myconfig/modules/* lv_micropython/ports/esp32/modules/
+
+      - name: Install build dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y git wget flex bison gperf python3 python3-pip python3-venv cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0
+
+      - name: Build firmware
+        run: |
+          cd lv_micropython/ports/esp32
+          make BOARD=ESP32_MINI_1_4M -j$(nproc)
+
+      - name: Upload firmware artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lv_mpy-esp32-mini1-4m-st7789-ec11
+          path: lv_micropython/ports/esp32/build-ESP32_MINI_1_4M/firmware.bin
