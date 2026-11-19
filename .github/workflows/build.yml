@@ -46,12 +46,18 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: 安装 ESP-IDF v4.4（使用官方 CI 脚本）
+      - name: 安装 ESP-IDF v4.4 工具链
         run: |
           set -e
           cd lv_micropython
-          source tools/ci.sh
-          ci_esp32_idf44_setup
+          # 容错：如果 esp-idf 目录不完整，则重新拉取
+          if [ ! -f "esp-idf/install.sh" ]; then
+            echo "esp-idf 子模块不完整，重新拉取..."
+            rm -rf esp-idf
+            git clone -b v4.4.4 --recursive https://github.com/espressif/esp-idf.git esp-idf
+          fi
+          cd esp-idf
+          ./install.sh esp32
 
       - name: 编译 mpy-cross
         run: |
@@ -69,8 +75,8 @@ jobs:
         run: |
           set -e
           cd lv_micropython
-          source tools/ci.sh
-          ci_esp32_idf44_setup
+          # 直接引用本地已安装的 ESP-IDF 环境
+          . ./esp-idf/export.sh
           cd ports/esp32
           make BOARD=ESP32_MINI_1_4M -j$(nproc) CFLAGS_EXTRA="-Wno-error"
 
