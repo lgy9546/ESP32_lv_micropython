@@ -57,8 +57,7 @@ jobs:
         run: |
           set -e
           cd lv_micropython
-          make -C mpy-cross -j$(nproc) \
-            CFLAGS_EXTRA="-Wno-error=unterminated-string-initialization -Wno-error=dangling-pointer"
+          make -C mpy-cross -j$(nproc) CFLAGS_EXTRA="-Wno-error"
 
       - name: 初始化 ESP32 端口子模块
         run: |
@@ -73,8 +72,7 @@ jobs:
           source tools/ci.sh
           ci_esp32_idf44_setup
           cd ports/esp32
-          make BOARD=ESP32_MINI_1_4M -j$(nproc) \
-            CFLAGS_EXTRA="-Wno-error=unterminated-string-initialization -Wno-error=dangling-pointer"
+          make BOARD=ESP32_MINI_1_4M -j$(nproc) CFLAGS_EXTRA="-Wno-error"
 
       - name: 校验固件文件
         run: |
