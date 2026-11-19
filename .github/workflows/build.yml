@@ -1,6 +1,6 @@
 name: Build lv_micropython ESP32-MINI-1 AutoRelease
 on:
-  workflow_dispatch:  # 仅网页手动点运行
+  workflow_dispatch:
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -10,7 +10,7 @@ jobs:
         with:
           path: myconfig
 
-      - name: 拉取 lv_micropython（锁定IDF4.4，浅克隆防超时）
+      - name: 拉取 lv_micropython（锁定IDF4.4，浅克隆）
         run: |
           set -e
           git clone --depth 1 --recursive https://github.com/lvgl/lv_micropython.git
